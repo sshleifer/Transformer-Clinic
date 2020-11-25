@@ -18,10 +18,11 @@ import numpy as np
 encoder_ratio = 1.0 # encoder_ratio is the ratio w.r.t. un-adjusted output from PreLN
 decoder_ratio = 1.0 # decoder_ratio is the ratio w.r.t. un-adjusted output from PreLN
 tmp_file = 0
+tmp_weight = 1.0
 
 ratio_list = None
 residual_components = None
-
+torch.autograd.set_detect_anomaly(True)
 class TransformerEncoderLayer(nn.Module):
 
     def __init__(self, args, LayerNum=None):
