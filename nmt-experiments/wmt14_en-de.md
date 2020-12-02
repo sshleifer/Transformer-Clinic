@@ -70,45 +70,72 @@ done
 
 ## Admin
 
-```
+```bash
+export dd=/private/home/sshleifer/data-bin/wmt14_en_de_joined_dict
 GPUS=0,1,2,3
 GPUID=1
 TOKEN_NUMBER=8192
 UPDATE_FREQUENCE=1
-for lnum in 6 12 18
-do
-  CUDA_VISIBLE_DEVICES=$GPUID fairseq-train \
-    ../data-bin/wmt14_en_de_joined_dict/ -s en -t de \
-    --arch transformer_wmt_en_de --share-all-embeddings \
-    --optimizer radam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
-    --lr-scheduler inverse_sqrt --max-update 500000 \
-    --warmup-init-lr 1e-07 --warmup-updates 8000 --lr 0.001 --min-lr 1e-09  \
-    --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
-    --weight-decay 0.0 --attention-dropout 0.1 --relu-dropout 0.1 \
-    --max-tokens $TOKEN_NUMBER --update-freq $UPDATE_FREQUENCE \
-    --save-dir wmt14ende/wmt-admin-${lnum}l --restore-file x.pt --seed 1111 \
-    --user-dir ../radam_fairseq --log-format simple --log-interval 500 \
-    --init-type adaptive-profiling --fp16 --fp16-scale-window 256 \
-    --encoder-layers $lnum --decoder-layers $lnum \
-    --threshold-loss-scale 0.03125 
+lnum=18
+run_clinic_wmt () {
+  echo $lnum
+  TOKEN_NUMBER=8192
+  UPDATE_FREQUENCE=1
+  fairseq-train $dd -s en -t de \
+  --arch transformer_wmt_en_de --share-all-embeddings \
+  --optimizer radam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
+  --lr-scheduler inverse_sqrt --max-update 500000 \
+  --warmup-init-lr 1e-07 --warmup-updates 8000 --lr 0.001 --min-lr 1e-09  \
+  --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
+  --weight-decay 0.0 --attention-dropout 0.1 --relu-dropout 0.1 \
+  --max-tokens $TOKEN_NUMBER --update-freq $UPDATE_FREQUENCE \
+  --save-dir wmt14ende/wmt-admin-${lnum}l --restore-file x.pt --seed 1111 \
+  --user-dir ../radam_fairseq --log-format simple --log-interval 500 \
+  --fp16 --fp16-scale-window 256 \
+  --encoder-layers $lnum --decoder-layers $lnum \
+  --threshold-loss-scale 0.03125  $@
+}
+export lnum=6
+CUDA_VISIBLE_DEVICES=0 run_clinic_wmt --init-type adaptive-profiling
+CUDA_VISIBLE_DEVICES=0,1,2,3 run_clinic_wmt --init-type adaptive | tee wmt14ende/loss_admin-6l.log
 
-  CUDA_VISIBLE_DEVICES=$GPUS fairseq-train \
-    ../data-bin/wmt14_en_de_joined_dict/ -s en -t de \
-    --arch transformer_wmt_en_de --share-all-embeddings \
-    --optimizer radam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
-    --lr-scheduler inverse_sqrt --max-update 500000 \
-    --warmup-init-lr 1e-07 --warmup-updates 8000 --lr 0.001 --min-lr 1e-09  \
-    --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
-    --weight-decay 0.0 --attention-dropout 0.1 --relu-dropout 0.1 \
-    --max-tokens $TOKEN_NUMBER --update-freq $UPDATE_FREQUENCE \
-    --save-dir wmt14ende/wmt-admin-${lnum}l --restore-file x.pt --seed 1111 \
-    --user-dir ../radam_fairseq --log-format simple --log-interval 500 \
-    --init-type adaptive --fp16 --fp16-scale-window 256 \
-    --encoder-layers $lnum --decoder-layers $lnum \
-    --threshold-loss-scale 0.03125 | tee ./wmt14ende/log/loss_admin-${lnum}l.log
 
-  bash eval_wmt_en-de.sh wmt14ende/wmt-admin-${lnum}l $GPUID 
-done 
+export lnum=12
+CUDA_VISIBLE_DEVICES=0 run_clinic_wmt --init-type adaptive-profiling
+CUDA_VISIBLE_DEVICES=0,1,2,3 run_clinic_wmt --init-type adaptive --distributed_world_size 4 | tee wmt14ende/loss_admin-12l.log
+
+CUDA_VISIBLE_DEVICES=$GPUID 
+CUDA_VISIBLE_DEVICES=$GPUID fairseq-train \
+  $dd -s en -t de \
+  --arch transformer_wmt_en_de --share-all-embeddings \
+  --optimizer radam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
+  --lr-scheduler inverse_sqrt --max-update 500000 \
+  --warmup-init-lr 1e-07 --warmup-updates 8000 --lr 0.001 --min-lr 1e-09  \
+  --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
+  --weight-decay 0.0 --attention-dropout 0.1 --relu-dropout 0.1 \
+  --max-tokens $TOKEN_NUMBER --update-freq $UPDATE_FREQUENCE \
+  --save-dir wmt14ende/wmt-admin-${lnum}l --restore-file x.pt --seed 1111 \
+  --user-dir ../radam_fairseq --log-format simple --log-interval 500 \
+  --init-type adaptive-profiling --fp16 --fp16-scale-window 256 \
+  --encoder-layers $lnum --decoder-layers $lnum \
+  --threshold-loss-scale 0.03125 
+
+CUDA_VISIBLE_DEVICES=$GPUS fairseq-train \
+  $dd -s en -t de \
+  --arch transformer_wmt_en_de --share-all-embeddings \
+  --optimizer radam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
+  --lr-scheduler inverse_sqrt --max-update 500000 \
+  --warmup-init-lr 1e-07 --warmup-updates 8000 --lr 0.001 --min-lr 1e-09  \
+  --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \
+  --weight-decay 0.0 --attention-dropout 0.1 --relu-dropout 0.1 \
+  --max-tokens $TOKEN_NUMBER --update-freq $UPDATE_FREQUENCE \
+  --save-dir wmt14ende/wmt-admin-${lnum}l --restore-file x.pt --seed 1111 \
+  --user-dir ../radam_fairseq --log-format simple --log-interval 500 \
+  --init-type adaptive --fp16 --fp16-scale-window 256 \
+  --encoder-layers $lnum --decoder-layers $lnum \
+  --threshold-loss-scale 0.03125 | tee wmt14ende/log/loss_admin-${lnum}l.log
+
+bash eval_wmt_en-de.sh wmt14ende/wmt-admin-${lnum}l $GPUID 
 ```
 
 ## Other Initializations

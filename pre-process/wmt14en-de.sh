@@ -138,7 +138,7 @@ for L in $src $tgt; do
     cp $tmp/bpe.test.$L $prep/test.$L
 done
 
-python preprocess.py --source-lang en --target-lang de \
+fairseq-preprocess --source-lang en --target-lang de \
   --trainpref $prep/train --validpref $prep/valid --testpref $prep/test \
   --destdir ../data-bin/wmt14_en_de_joined_dict \
   --joined-dictionary
